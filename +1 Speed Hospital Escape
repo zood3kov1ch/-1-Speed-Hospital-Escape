@@ -1,0 +1,184 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Fluent = loadstring(game:HttpGet(
+    "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"
+))()
+
+-- Create window
+local Window = Fluent:CreateWindow({
+    Title = "Kyelisz",
+    SubTitle = "Fluent UI",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+-- Blue accent
+Fluent.AccentColor = Color3.fromRGB(0, 140, 255)
+
+local MainTab = Window:AddTab({
+    Title = "Main",
+    Icon = "home"
+})
+
+local WinParts = workspace:WaitForChild("WinParts")
+
+local SelectedWin = {}
+local SelectedAutoWin = false
+local AutoWin = false
+local AutoSpeed = false
+
+local OriginalPosition = nil
+
+-- Get available wins
+local WinNames = {}
+
+for _, Part in ipairs(WinParts:GetChildren()) do
+    if Part:IsA("BasePart") then
+        table.insert(WinNames, Part.Name)
+    end
+end
+
+table.sort(WinNames)
+
+-- Choose Win
+MainTab:AddDropdown("WinDropdown", {
+    Title = "Choose Win",
+    Values = WinNames,
+    Multi = true,
+    Default = {},
+    Callback = function(Value)
+        SelectedWin = Value
+    end
+})
+
+-- Auto Win Selected
+MainTab:AddToggle("SelectedAutoWin", {
+    Title = "Auto Win Selected",
+    Default = false,
+    Callback = function(Value)
+        SelectedAutoWin = Value
+
+        if Value then
+            task.spawn(function()
+                while SelectedAutoWin do
+                    local Character = LocalPlayer.Character
+                    local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+
+                    if Root then
+                        for WinName, IsSelected in pairs(SelectedWin) do
+                            if not SelectedAutoWin then
+                                break
+                            end
+
+                            if IsSelected then
+                                local Part = WinParts:FindFirstChild(WinName)
+
+                                if Part and Part:IsA("BasePart") then
+                                    firetouchinterest(Root, Part, 0)
+                                    firetouchinterest(Root, Part, 1)
+                                end
+                            end
+                        end
+                    end
+
+                    task.wait()
+                end
+            end)
+        end
+    end
+})
+
+-- Auto Win ALL
+MainTab:AddToggle("AutoWin", {
+    Title = "Auto Win",
+    Default = false,
+    Callback = function(Value)
+        AutoWin = Value
+
+        if Value then
+            task.spawn(function()
+                while AutoWin do
+                    local Character = LocalPlayer.Character
+                    local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+
+                    if Root then
+                        local Parts = {}
+
+                        for _, Part in ipairs(WinParts:GetDescendants()) do
+                            if Part:IsA("BasePart") then
+                                table.insert(Parts, Part)
+                            end
+                        end
+
+                        -- Randomize order
+                        for i = #Parts, 2, -1 do
+                            local j = math.random(i)
+                            Parts[i], Parts[j] = Parts[j], Parts[i]
+                        end
+
+                        for _, Part in ipairs(Parts) do
+                            if not AutoWin then
+                                break
+                            end
+
+                            firetouchinterest(Root, Part, 0)
+                            firetouchinterest(Root, Part, 1)
+                        end
+                    end
+
+                    task.wait()
+                end
+            end)
+        end
+    end
+})
+
+-- Auto Speed
+MainTab:AddToggle("AutoSpeed", {
+    Title = "Auto Speed",
+    Default = false,
+    Callback = function(Value)
+        AutoSpeed = Value
+
+        local Character = LocalPlayer.Character
+        local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+
+        if Value then
+            -- Save position when enabled
+            if Root then
+                OriginalPosition = Root.CFrame
+            end
+
+            task.spawn(function()
+                while AutoSpeed do
+                    local Character = LocalPlayer.Character
+                    local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+                    local Treadmills = workspace:FindFirstChild("Treadmills")
+                    local Starter = Treadmills and Treadmills:FindFirstChild("Starter")
+
+                    if Root and Starter and Starter:IsA("BasePart") then
+                        Root.CFrame = Starter.CFrame
+                    end
+
+                    task.wait()
+                end
+            end)
+        else
+            -- Return to original position
+            if OriginalPosition then
+                local Character = LocalPlayer.Character
+                local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+
+                if Root then
+                    Root.CFrame = OriginalPosition
+                end
+
+                OriginalPosition = nil
+            end
+        end
+    end
+})
